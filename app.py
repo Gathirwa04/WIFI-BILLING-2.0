@@ -219,6 +219,19 @@ def export_csv():
 with app.app_context():
     db.create_all()
 
+# --- Error Handling ---
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # Log the error (in a real app, use logging module)
+    print(f"CRITICAL ERROR: {str(e)}")
+    
+    # Return JSON if it's an AJAX request (like the payment poll)
+    if request.is_json or request.args.get('json'):
+        return jsonify({"success": False, "message": "Internal Server Error. The system is self-correcting."}), 500
+        
+    # Otherwise return error page
+    return render_template('base.html', content="<div class='container' style='text-align:center; padding:50px;'><h2 style='color:red'>System Glitch Detected</h2><p>Auto-correction protocol initiated. Please refresh in a moment.</p></div>"), 500
+
 if __name__ == '__main__':
     import webbrowser
     import threading

@@ -1,8 +1,10 @@
 :root {
     --bg-color: #050510;
     --card-bg: #12122b;
-    --primary: #00f3ff; /* Cyan Neon */
-    --secondary: #bc13fe; /* Purple Neon */
+    --primary: #00f3ff;
+    /* Cyan Neon */
+    --secondary: #bc13fe;
+    /* Purple Neon */
     --text-color: #e0e0e0;
     --accent: #ffee00;
     --success: #00ff9d;
@@ -28,14 +30,29 @@ body {
 
 /* Animations */
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes glowPulse {
-    0% { box-shadow: 0 0 5px var(--primary); }
-    50% { box-shadow: 0 0 20px var(--primary), 0 0 10px var(--secondary); }
-    100% { box-shadow: 0 0 5px var(--primary); }
+    0% {
+        box-shadow: 0 0 5px var(--primary);
+    }
+
+    50% {
+        box-shadow: 0 0 20px var(--primary), 0 0 10px var(--secondary);
+    }
+
+    100% {
+        box-shadow: 0 0 5px var(--primary);
+    }
 }
 
 .container {
@@ -89,9 +106,18 @@ h2 {
     opacity: 0;
 }
 
-.package-card:nth-child(1) { animation-delay: 0.1s; }
-.package-card:nth-child(2) { animation-delay: 0.2s; }
-.package-card:nth-child(3) { animation-delay: 0.3s; }
+.package-card:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.package-card:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.package-card:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
 /* ... continue for others ... */
 
 .package-card:hover {
@@ -207,7 +233,8 @@ table {
     background: rgba(255, 255, 255, 0.05);
 }
 
-th, td {
+th,
+td {
     padding: 15px;
     text-align: left;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -222,9 +249,17 @@ tr:hover {
     background: rgba(255, 255, 255, 0.02);
 }
 
-.status-completed { color: var(--success); }
-.status-pending { color: var(--accent); }
-.status-failed { color: var(--danger); }
+.status-completed {
+    color: var(--success);
+}
+
+.status-pending {
+    color: var(--accent);
+}
+
+.status-failed {
+    color: var(--danger);
+}
 
 /* Loader */
 .loader {
@@ -238,8 +273,73 @@ tr:hover {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
-.hidden { display: none; }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 2rem;
+        -webkit-text-stroke: 0.5px var(--primary);
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    .packages-grid {
+        grid-template-columns: 1fr;
+        /* Stack cards vertically */
+        gap: 20px;
+    }
+
+    .package-card {
+        padding: 20px;
+        transform: none !important;
+        /* Disable hover lift on mobile to prevent sticky states */
+    }
+
+    .package-name {
+        font-size: 1.2rem;
+    }
+
+    .package-duration {
+        font-size: 2rem;
+    }
+
+    .btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+        padding: 15px;
+        /* Larger touch target */
+        font-size: 1.1rem;
+    }
+
+    .menu-btn {
+        display: block;
+        /* If we had a menu */
+    }
+
+    .payment-container {
+        padding: 20px;
+        margin: 20px auto;
+    }
+
+    .access-code {
+        font-size: 2.5rem;
+        /* Smaller font for code on mobile */
+        letter-spacing: 5px;
+    }
+}
