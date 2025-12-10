@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h2>Transactions</h2>
+        <div>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn" style="font-size: 0.8rem; padding: 8px 15px;">All</a>
+            <a href="{{ url_for('admin_dashboard', status='Completed') }}" class="btn btn-secondary"
+                style="font-size: 0.8rem; padding: 8px 15px;">Completed</a>
+            <a href="{{ url_for('admin_dashboard', status='Pending') }}" class="btn"
+                style="font-size: 0.8rem; padding: 8px 15px; border-color: orange; color: orange;">Pending</a>
+            <a href="{{ url_for('export_csv') }}" class="btn"
+                style="margin-left: 20px; border-color: var(--success); color: var(--success);">Export CSV</a>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Date</th>
+                    <th>Phone</th>
+                    <th>Package</th>
+                    <th>Amount</th>
+                    <th>Receipt</th>
+                    <th>Code</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transactions %}
+                <tr>
+                    <td>{{ t.id }}</td>
+                    <td>{{ t.date_created.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ t.phone_number }}</td>
+                    <td>{{ t.package_name }}</td>
+                    <td>{{ t.amount }}</td>
+                    <td>{{ t.mpesa_receipt_number or '-' }}</td>
+                    <td style="font-family: monospace; font-weight: bold; color: var(--accent);">{{ t.access_code or '-'
+                        }}</td>
+                    <td class="status-{{ t.status.lower() }}">{{ t.status }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: #aaa;">No transactions found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

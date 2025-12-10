@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="intro" style="text-align: center; margin-bottom: 50px;">
+    <h2>Choose Your Speed</h2>
+    <p>Select a package that suits your needs. Instant activation.</p>
+</div>
+
+<div class="packages-grid">
+    {% for package in packages %}
+    <div class="package-card" style="border-color: {{ package.color }}; box-shadow: 0 0 10px {{ package.color }}40;">
+        <div class="package-name" style="color: {{ package.color }};">{{ package.name }}</div>
+        <div class="package-duration">{{ package.duration }}</div>
+        <div class="package-price">{{ package.price }} KSH</div>
+        <a href="{{ url_for('payment', package_id=package.id) }}" class="btn"
+            style="border-color: {{ package.color }}; color: {{ package.color }};">SELECT</a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

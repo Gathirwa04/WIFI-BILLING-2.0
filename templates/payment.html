@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="payment-container">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h2 style="color: {{ package.color }}">Confirm Payment</h2>
+        <div class="package-card"
+            style="transform: scale(0.9); border-color: {{ package.color }}; display: inline-block; width: 100%;">
+            <div class="package-name" style="color: {{ package.color }}">{{ package.name }}</div>
+            <div class="package-duration">{{ package.duration }}</div>
+            <div class="package-price">{{ package.price }} KSH</div>
+        </div>
+    </div>
+
+    <form id="payment-form">
+        <input type="hidden" name="package_id" value="{{ package.id }}">
+        <div class="form-group">
+            <label for="phone" style="display: block; margin-bottom: 10px;">Enter M-PESA Phone Number</label>
+            <input type="text" id="phone" name="phone_number" class="form-control" placeholder="07XXXXXXXX" required
+                pattern="^(07|01)\d{8}$|^254\d{9}$">
+        </div>
+
+        <div id="payment-status" style="text-align: center; margin-bottom: 20px; font-weight: bold; min-height: 24px;">
+        </div>
+
+        <div id="loading" class="loader hidden"></div>
+
+        <button type="submit" class="btn"
+            style="width: 100%; border-color: {{ package.color }}; color: {{ package.color }};">Pay Now</button>
+    </form>
+
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="{{ url_for('index') }}" style="color: #aaa; text-decoration: none;">Cancel</a>
+    </div>
+</div>
+{% endblock %}

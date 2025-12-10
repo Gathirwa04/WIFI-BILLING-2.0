@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container" style="text-align: center; margin-top: 50px;">
+    <div
+        style="background: var(--card-bg); padding: 50px; border-radius: 20px; display: inline-block; box-shadow: 0 0 30px rgba(0, 255, 157, 0.2); border: 1px solid var(--success);">
+        <h2 style="color: var(--success); font-size: 2.5rem; margin-bottom: 20px;">PAYMENT SUCCESSFUL!</h2>
+        <p style="font-size: 1.2rem;">You are now connected. Use the code below to login.</p>
+
+        <div class="access-code">{{ access_code }}</div>
+
+        <p style="color: #aaa;">This code is valid for your selected duration.</p>
+
+        <a href="{{ url_for('index') }}" class="btn"
+            style="margin-top: 30px; border-color: var(--success); color: var(--success);">Return Home</a>
+    </div>
+</div>
+{% endblock %}
