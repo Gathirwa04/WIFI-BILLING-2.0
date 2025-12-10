@@ -1,46 +1,137 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container">
+<div class="container" style="padding-top: 20px;">
+    <!-- Header Area -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-        <h2>Dashboard</h2>
-        <div>
-            <a href="{{ url_for('admin_dashboard') }}" class="btn"
-                style="font-size: 0.8rem; padding: 8px 15px;">Refresh</a>
+        <h2>Admin Dashboard</h2>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn" style="padding: 8px 15px;">🔄 Refresh</a>
             <a href="{{ url_for('export_csv') }}" class="btn"
-                style="margin-left: 10px; border-color: var(--success); color: var(--success);">Export CSV</a>
+                style="border-color: var(--success); color: var(--success);">📥 Export CSV</a>
         </div>
     </div>
 
     <!-- Analytics Cards -->
     <div class="packages-grid"
-        style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px;">
-        <div class="package-card" style="padding: 20px; text-align: left; border-color: var(--success);">
-            <div style="color: #aaa; font-size: 0.9rem;">Total Revenue</div>
-            <div style="font-size: 2rem; color: var(--success); font-weight: bold;">{{ total_revenue }} KSH</div>
+        style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px;">
+        <div class="package-card"
+            style="padding: 20px; text-align: left; border-color: var(--success); background: rgba(0,0,0,0.5);">
+            <div style="color: #aaa; font-size: 0.9rem;">💰 Total Revenue</div>
+            <div style="font-size: 2.5rem; color: var(--success); font-weight: bold;">{{ total_revenue }} <span
+                    style="font-size: 1rem;">KSH</span></div>
         </div>
-        <div class="package-card" style="padding: 20px; text-align: left; border-color: var(--primary);">
-            <div style="color: #aaa; font-size: 0.9rem;">Active Connections</div>
-            <div style="font-size: 2rem; color: var(--primary); font-weight: bold;">{{ active_count }}</div>
+        <div class="package-card"
+            style="padding: 20px; text-align: left; border-color: var(--primary); background: rgba(0,0,0,0.5);">
+            <div style="color: #aaa; font-size: 0.9rem;">📶 Active Users</div>
+            <div style="font-size: 2.5rem; color: var(--primary); font-weight: bold;">{{ active_count }}</div>
         </div>
-        <div class="package-card" style="padding: 20px; text-align: left; border-color: var(--secondary);">
-            <div style="color: #aaa; font-size: 0.9rem;">Most Loved Package</div>
-            <div style="font-size: 1.5rem; color: var(--secondary); font-weight: bold;">{{ most_popular }}</div>
+        <div class="package-card"
+            style="padding: 20px; text-align: left; border-color: var(--secondary); background: rgba(0,0,0,0.5);">
+            <div style="color: #aaa; font-size: 0.9rem;">❤️ Most Popular</div>
+            <div style="font-size: 1.8rem; color: var(--secondary); font-weight: bold;">{{ most_popular }}</div>
+        </div>
+    </div>
+
+    <!-- PDF Voucher Generator -->
+    <div
+        style="background: rgba(255,255,255,0.05); padding: 25px; border-radius: 10px; margin-bottom: 40px; border: 1px solid #444;">
+        <h3 style="margin-top: 0; color: var(--accent);">🖨️ Generate Vouchers</h3>
+        <p style="color: #888; margin-bottom: 15px;">Create printable PDF cards for offline sales.</p>
+        <form action="{{ url_for('generate_vouchers') }}" method="POST" target="_blank"
+            style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+            <div>
+                <label>Package Type</label>
+                <select name="package_name" class="form-control" style="width: 150px;">
+                    <option value="Basic">Basic (30min)</option>
+                    <option value="Lite" selected>Lite (1hr)</option>
+                    <option value="Bazu">Bazu (3hrs)</option>
+                    <option value="Kifaru">Kifaru (6hrs)</option>
+                </select>
+            </div>
+            <div>
+                <label>Duration</label>
+                <select name="duration" class="form-control" style="width: 100px;">
+                    <option value="30min">30min</option>
+                    <option value="1hr" selected>1hr</option>
+                    <option value="3hrs">3hrs</option>
+                    <option value="6hrs">6hrs</option>
+                </select>
+            </div>
+            <div>
+                <label>Quantity</label>
+                <input type="number" name="quantity" class="form-control" value="10" min="1" max="100"
+                    style="width: 80px;">
+            </div>
+            <button type="submit" class="btn" style="height: 40px; margin-bottom: 2px;">Download PDF</button>
+        </form>
+    </div>
+
+    <!-- Agent Management -->
+    <div
+        style="background: rgba(255,255,255,0.05); padding: 25px; border-radius: 10px; margin-bottom: 40px; border: 1px solid #444;">
+        <h3 style="margin-top: 0; color: var(--secondary);">🤝 Reseller Management</h3>
+        <div style="display: flex; gap: 40px; flex-wrap: wrap;">
+            <!-- Create Agent -->
+            <div style="flex: 1; min-width: 300px;">
+                <h4 style="margin-bottom: 15px;">Create New Agent</h4>
+                <form action="{{ url_for('create_agent') }}" method="POST"
+                    style="display: flex; gap: 10px; align-items: flex-end;">
+                    <input type="text" name="username" class="form-control" placeholder="Username" required>
+                    <input type="text" name="password" class="form-control" placeholder="Password" required>
+                    <button type="submit" class="btn"
+                        style="border-color: var(--secondary); color: var(--secondary);">Add</button>
+                </form>
+            </div>
+            <!-- List Agents -->
+            <div style="flex: 1; min-width: 300px;">
+                <h4 style="margin-bottom: 15px;">Agent List</h4>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="text-align: left; color: #aaa; border-bottom: 1px solid #333;">
+                            <th style="padding: 5px;">Name</th>
+                            <th style="padding: 5px;">Wallet</th>
+                            <th style="padding: 5px;">Top Up</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for agent in agents %}
+                        <tr>
+                            <td style="padding: 10px 5px;">{{ agent.username }}</td>
+                            <td style="color: var(--success); padding: 10px 5px;">{{ agent.wallet_balance }}</td>
+                            <td style="padding: 10px 5px;">
+                                <form action="{{ url_for('topup_agent', id=agent.id) }}" method="POST"
+                                    style="display: flex; gap: 5px;">
+                                    <input type="number" name="amount" placeholder="Amount"
+                                        style="width: 70px; padding: 5px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
+                                    <button type="submit" class="btn"
+                                        style="padding: 2px 8px; font-size: 0.8rem;">+</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" style="color: #666; padding: 10px;">No agents created.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <!-- Complaints Section -->
-    <h3 style="margin-bottom: 20px; color: var(--danger);">User Complaints</h3>
+    <h3 style="margin-bottom: 20px; color: var(--danger);">⚠️ User Complaints</h3>
     <div class="table-container" style="max-height: 300px; overflow-y: auto; margin-bottom: 50px;">
         <table>
             <thead>
                 <tr>
-                    <th style="background: rgba(255, 0, 85, 0.1); color: var(--danger);">Date</th>
-                    <th style="background: rgba(255, 0, 85, 0.1); color: var(--danger);">Category</th>
-                    <th style="background: rgba(255, 0, 85, 0.1); color: var(--danger);">Message</th>
-                    <th style="background: rgba(255, 0, 85, 0.1); color: var(--danger);">Contact</th>
-                    <th style="background: rgba(255, 0, 85, 0.1); color: var(--danger);">Status</th>
-                    <th style="background: rgba(255, 0, 85, 0.1); color: var(--danger);">Action</th>
+                    <th>Date</th>
+                    <th>Issue</th>
+                    <th>Message</th>
+                    <th>Contact</th>
+                    <th>Status</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -50,72 +141,80 @@
                     <td>{{ c.category }}</td>
                     <td>{{ c.message }}</td>
                     <td>{{ c.contact }}</td>
-                    <td style="color: {{ 'var(--success)' if c.status == 'Resolved' else 'var(--accent)' }}">{{ c.status
+                    <td style="color: {{ 'var(--success)' if c.status == 'Resolved' else 'var(--danger)' }}">{{ c.status
                         }}</td>
                     <td>
                         {% if c.status == 'Open' %}
-                        <a href="{{ url_for('resolve_complaint', id=c.id) }}"
-                            style="color: var(--success); text-decoration: none; border: 1px solid var(--success); padding: 2px 8px; border-radius: 5px;">Resolve</a>
-                        {% else %}
-                        -
+                        <a href="{{ url_for('resolve_complaint', id=c.id) }}" class="btn"
+                            style="padding: 2px 8px; font-size: 0.8rem; border-color: var(--success); color: var(--success);">Resolve</a>
                         {% endif %}
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" style="text-align: center;">No complaints.</td>
+                    <td colspan="6" style="text-align: center;">No complaints found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-    <!-- Transaction History -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h3>Transaction History</h3>
-        <div>
-            <a href="{{ url_for('admin_dashboard') }}" class="btn" style="font-size: 0.8rem; padding: 5px 10px;">All</a>
-            <a href="{{ url_for('admin_dashboard', status='Completed') }}" class="btn btn-secondary"
-                style="font-size: 0.8rem; padding: 5px 10px;">Completed</a>
-            <a href="{{ url_for('admin_dashboard', status='Pending') }}" class="btn"
-                style="font-size: 0.8rem; padding: 5px 10px; border-color: orange; color: orange;">Pending</a>
+    <!-- Transaction History with Search -->
+    <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 10px;">
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 20px;">
+            <h3>📜 Transactions</h3>
+
+            <!-- Search Form -->
+            <form action="{{ url_for('admin_dashboard') }}" method="GET" style="display: flex; gap: 10px;">
+                <input type="text" name="q" placeholder="Search Phone / Code..." class="form-control"
+                    style="width: 200px;">
+                <button type="submit" class="btn">Search</button>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn"
+                    style="border-color: #666; color: #aaa;">Clear</a>
+            </form>
+
+            <div>
+                <a href="{{ url_for('admin_dashboard', status='Completed') }}" class="btn"
+                    style="font-size: 0.8rem; border-color: var(--success); color: var(--success);">Completed</a>
+                <a href="{{ url_for('admin_dashboard', status='Pending') }}" class="btn"
+                    style="font-size: 0.8rem; border-color: orange; color: orange;">Pending</a>
+            </div>
         </div>
-    </div>
 
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Date</th>
-                    <th>Phone</th>
-                    <th>Package</th>
-                    <th>Amount</th>
-                    <th>Receipt</th>
-                    <th>Code</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for t in transactions %}
-                <tr>
-                    <td>{{ t.id }}</td>
-                    <td>{{ t.date_created.strftime('%Y-%m-%d %H:%M') }}</td>
-                    <td>{{ t.phone_number }}</td>
-                    <td>{{ t.package_name }}</td>
-                    <td>{{ t.amount }}</td>
-                    <td>{{ t.mpesa_receipt_number or '-' }}</td>
-                    <td style="font-family: monospace; font-weight: bold; color: var(--accent);">{{ t.access_code or '-'
-                        }}</td>
-                    <td class="status-{{ t.status.lower() }}">{{ t.status }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="8" style="text-align: center; color: #aaa;">No transactions found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Phone</th>
+                        <th>Package</th>
+                        <th>Amount</th>
+                        <th>Receipt</th>
+                        <th>Code</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr>
+                        <td>{{ t.date_created.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ t.phone_number }}</td>
+                        <td>{{ t.package_name }}</td>
+                        <td>{{ t.amount }}</td>
+                        <td>{{ t.mpesa_receipt_number or '-' }}</td>
+                        <td style="font-family: monospace; font-weight: bold; color: var(--accent);">{{ t.access_code or
+                            '-' }}</td>
+                        <td class="status-{{ t.status.lower() }}">{{ t.status }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #aaa;">No records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}

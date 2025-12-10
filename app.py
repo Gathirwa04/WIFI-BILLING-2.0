@@ -52,8 +52,9 @@ class Transaction(db.Model):
     mpesa_receipt_number = db.Column(db.String(50), unique=True, nullable=True)
     package_name = db.Column(db.String(50), nullable=False)
     checkout_request_id = db.Column(db.String(100), nullable=False)
-    status = db.Column(db.String(20), default='Pending') # Pending, Completed, Failed
+    status = db.Column(db.String(20), default='Pending') # Pending, Completed, Failed, Expired
     access_code = db.Column(db.String(20), nullable=True)
+    mac_address = db.Column(db.String(50), nullable=True) # For Device Locking
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -65,8 +66,11 @@ class Transaction(db.Model):
             'package_name': self.package_name,
             'status': self.status,
             'access_code': self.access_code,
+            'mac_address': self.mac_address,
             'date_created': self.date_created.strftime('%Y-%m-%d %H:%M:%S')
         }
+
+
 
 class Complaint(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -80,16 +84,16 @@ class Complaint(db.Model):
 
 def parse_duration(duration_str):
     if 'min' in duration_str:
-        return datetime.timedelta(minutes=int(duration_str.replace('min', '')))
+        return timedelta(minutes=int(duration_str.replace('min', '')))
     elif 'hr' in duration_str:
-        return datetime.timedelta(hours=int(duration_str.replace('hr', '').replace('s', '')))
+        return timedelta(hours=int(duration_str.replace('hr', '').replace('s', '')))
     elif 'DAY' in duration_str:
-        return datetime.timedelta(days=int(duration_str.split(' ')[0]))
+        return timedelta(days=int(duration_str.split(' ')[0]))
     elif 'WEEK' in duration_str:
-        return datetime.timedelta(weeks=int(duration_str.split(' ')[0]))
+        return timedelta(weeks=int(duration_str.split(' ')[0]))
     elif 'MONTH' in duration_str:
-        return datetime.timedelta(days=30 * int(duration_str.split(' ')[0]))
-    return datetime.timedelta(hours=1) # Default
+        return timedelta(days=30 * int(duration_str.split(' ')[0]))
+    return timedelta(hours=1) # Default
 
 @app.route('/')
 def index():
@@ -219,6 +223,11 @@ def simulate_payment(checkout_request_id):
 def redeem():
     if request.method == 'POST':
         mpesa_code = request.form.get('mpesa_code')
+        # Simulate capturing MAC from URL (e.g., ?mac=AA:BB:CC...)
+        # In a real Router login page, this is passed automatically.
+        # For this standalone testing, we will generate a 'device_id' cookie if missing, or use a dummy.
+        user_mac = request.args.get('mac', request.cookies.get('device_id', 'UNKNOWN_DEVICE'))
+        
         if not mpesa_code:
             flash('Please enter a code or phone number')
             return redirect(url_for('redeem'))
@@ -238,12 +247,31 @@ def redeem():
                 
             transaction = Transaction.query.filter_by(phone_number=clean_phone, status='Completed').order_by(Transaction.id.desc()).first()
         else:
-            # Search by Receipt Number
-            transaction = Transaction.query.filter_by(mpesa_receipt_number=mpesa_code).first()
+            # Search by Receipt Number OR Access Code
+            transaction = Transaction.query.filter((Transaction.mpesa_receipt_number==mpesa_code) | (Transaction.access_code==mpesa_code)).first()
         
         if transaction:
             if transaction.status == 'Completed':
+                # --- MAC BINDING LOGIC ---
+                if transaction.mac_address:
+                    # Already bound, check if it matches
+                    if transaction.mac_address != user_mac and user_mac != 'UNKNOWN_DEVICE':
+                        flash(f"SECURITY ALERT: This code is locked to another device. Access Denied.")
+                        return redirect(url_for('redeem'))
+                    elif user_mac == 'UNKNOWN_DEVICE':
+                         # Allow but warn (since we can't strictly enforce without router)
+                         flash("Warning: Device ID not detected. Please connect through the Hotspot Login page for better security.")
+                else:
+                    # First use! Bind to this MAC
+                    if user_mac != 'UNKNOWN_DEVICE':
+                        transaction.mac_address = user_mac
+                        db.session.commit()
+                        flash(f"Success! Code locked to this device ({user_mac}).")
+                # -------------------------
+
                 return render_template('success.html', access_code=transaction.access_code)
+            elif transaction.status == 'Expired':
+                flash('This code has expired. Please purchase a new package.')
             else:
                 flash(f'Transaction found but status is: {transaction.status}')
         else:
@@ -256,19 +284,46 @@ def success():
     access_code = request.args.get('code')
     return render_template('success.html', access_code=access_code)
 
-    return render_template('login.html')
 
-@app.route('/admin/dashboard')
-def admin_dashboard():
-    # ... (existing code) ...
-    if not session.get('admin_logged_in'):
-        return redirect(url_for('admin_login'))
+
+
+# --- Helper Functions ---
+def disconnect_user_from_router(access_code):
+    """
+    Placeholder for Mikrotik/Router integration.
+    In a real scenario, this would send an API command to the router
+    to remove the user from the active hotspot list.
+    """
+    print(f"[ROUTER] Disconnecting user with code: {access_code}")
+    # Example: mpesa_client.send_router_command(f"/ip hotspot active remove {access_code}")
+    pass
+
+def check_and_expire_sessions(user_phone):
+    """
+    Checks all 'Completed' transactions for this user.
+    If time has elapsed, updates status to 'Expired'.
+    """
+    transactions = Transaction.query.filter_by(phone_number=user_phone, status='Completed').all()
+    now = datetime.utcnow()
+    pkg_duration_map = {p['name']: p['duration'] for p in PACKAGES}
     
-    # ... (rest of admin dashboard logic) ...
-    # Re-pasting the FULL admin_dashboard logic here to ensure continuity if I replace the block
-    # Actually, I should use 'append' logic or insert before 'if __name__'.
-    # I'll stick to inserting new routes before the Admin Section or after it. 
-    # Let's insert BEFORE Admin Section to keep Admin at bottom.
+    expired_count = 0
+    for t in transactions:
+        duration_str = pkg_duration_map.get(t.package_name, '1hr')
+        try:
+            duration = parse_duration(duration_str)
+            if now > t.date_created + duration:
+                # Session has expired
+                t.status = 'Expired'
+                disconnect_user_from_router(t.access_code)
+                expired_count += 1
+        except:
+            continue
+            
+    if expired_count > 0:
+        db.session.commit()
+        return True
+    return False
 
 # --- User Portal Routes ---
 @app.route('/my_account', methods=['GET', 'POST'])
@@ -296,7 +351,10 @@ def user_dashboard():
     if not user_phone:
         return redirect(url_for('my_account'))
     
-    # Fetch History
+    # 1. Enforce Expiry Logic BEFORE rendering
+    check_and_expire_sessions(user_phone)
+    
+    # Fetch History (Now includes 'Expired' status updates)
     transactions = Transaction.query.filter_by(phone_number=user_phone).order_by(Transaction.date_created.desc()).all()
     
     # Determine Active Plan
@@ -392,12 +450,24 @@ def admin_dashboard():
     # --- Complaints ---
     complaints = Complaint.query.order_by(Complaint.date_submitted.desc()).all()
 
-    # --- Transactions Filter ---
+    # --- Transactions Filter & Search ---
+    search_query = request.args.get('q')
     filter_status = request.args.get('status')
+    
+    query = Transaction.query
+    
+    if search_query:
+        # Search by Phone or Receipt or Code
+        query = query.filter(
+            (Transaction.phone_number.contains(search_query)) | 
+            (Transaction.mpesa_receipt_number.contains(search_query)) |
+            (Transaction.access_code.contains(search_query))
+        )
+    
     if filter_status:
-        transactions = Transaction.query.filter_by(status=filter_status).order_by(Transaction.date_created.desc()).all()
-    else:
-        transactions = Transaction.query.order_by(Transaction.date_created.desc()).all()
+        query = query.filter_by(status=filter_status)
+        
+    transactions = query.order_by(Transaction.date_created.desc()).all()
         
     return render_template('dashboard.html', 
                            transactions=transactions, 
@@ -405,6 +475,8 @@ def admin_dashboard():
                            active_count=active_count,
                            most_popular=most_popular,
                            complaints=complaints)
+
+
 
 @app.route('/admin/resolve_complaint/<int:id>')
 def resolve_complaint(id):
@@ -423,14 +495,19 @@ def export_csv():
 
     si = StringIO()
     cw = csv.writer(si)
-    cw.writerow(['ID', 'Phone', 'Amount', 'Package', 'Receipt', 'Status', 'Code', 'Date'])
+    cw.writerow(['ID', 'Phone', 'Amount', 'Package', 'Receipt', 'Status', 'Code', 'Mac Address', 'Date'])
     
     transactions = Transaction.query.all()
     for t in transactions:
-        cw.writerow([t.id, t.phone_number, t.amount, t.package_name, t.mpesa_receipt_number, t.status, t.access_code, t.date_created])
+        cw.writerow([t.id, t.phone_number, t.amount, t.package_name, t.mpesa_receipt_number, t.status, t.access_code, t.mac_address, t.date_created])
         
     output = si.getvalue()
     return Response(output, mimetype="text/csv", headers={"Content-Disposition": "attachment;filename=transactions.csv"})
+
+# --- PDF Voucher Generation ---
+
+
+
 
 # Create DB
 with app.app_context():

@@ -1,4 +1,8 @@
 flask
 flask-sqlalchemy
 requests
+flask
+flask-sqlalchemy
+requests
 python-dotenv
+reportlab

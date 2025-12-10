@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h2>Agent Dashboard</h2>
+        <div>
+            <span style="color: var(--success); font-weight: bold; margin-right: 20px;">Balance: KSH {{
+                agent.wallet_balance }}</span>
+            <a href="{{ url_for('agent_logout') }}" class="btn"
+                style="font-size: 0.8rem; padding: 5px 15px; border-color: var(--danger); color: var(--danger);">Logout</a>
+        </div>
+    </div>
+
+    <p style="text-align: center; margin-bottom: 30px; color: #aaa;">Sell Codes Instantly</p>
+
+    <div class="packages-grid">
+        {% for pkg in packages %}
+        <div class="package-card" style="border-color: {{ pkg.color }};">
+            <h3>{{ pkg.name }}</h3>
+            <div class="price">KSH {{ pkg.price }}</div>
+            <div class="duration">{{ pkg.duration }}</div>
+
+            <input type="text" id="phone_{{ pkg.id }}" placeholder="Customer Phone" class="form-control"
+                style="margin: 10px 0;">
+
+            <button onclick="sellCode({{ pkg.id }}, 'phone_{{ pkg.id }}')" class="btn" style="width: 100%;">Sell
+                Now</button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="resultModal"
+        style="display:none; position: fixed; top: 20%; left: 50%; transform: translate(-50%, -50%); background: #000; border: 2px solid var(--success); padding: 30px; z-index: 1000; text-align: center; width: 300px;">
+        <h3 style="color: var(--success);">Sale Successful!</h3>
+        <p>Give this code to customer:</p>
+        <h1 id="generatedCode" style="font-size: 3rem; color: white;">CODE</h1>
+        <button onclick="document.getElementById('resultModal').style.display='none'; location.reload();"
+            class="btn">Close</button>
+    </div>
+
+</div>
+
+<script>
+    function sellCode(pkgId, inputId) {
+        const phone = document.getElementById(inputId).value;
+        if (!phone) { alert("Enter customer phone!"); return; }
+
+        if (!confirm("Confirm Sale? This will deduct from your wallet.")) return;
+
+        const formData = new FormData();
+        formData.append('package_id', pkgId);
+        formData.append('phone_number', phone);
+
+        fetch('/agent/sell', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('generatedCode').innerText = data.code;
+                    document.getElementById('resultModal').style.display = 'block';
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+</script>
+{% endblock %}
