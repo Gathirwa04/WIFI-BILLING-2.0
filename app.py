@@ -168,6 +168,26 @@ def check_payment(checkout_request_id):
         })
     return jsonify({'status': 'NotFound'})
 
+@app.route('/redeem', methods=['GET', 'POST'])
+def redeem():
+    if request.method == 'POST':
+        mpesa_code = request.form.get('mpesa_code')
+        if not mpesa_code:
+            flash('Please enter a code')
+            return redirect(url_for('redeem'))
+            
+        transaction = Transaction.query.filter_by(mpesa_receipt_number=mpesa_code).first()
+        
+        if transaction:
+            if transaction.status == 'Completed':
+                return render_template('success.html', access_code=transaction.access_code)
+            else:
+                flash(f'Transaction found but status is: {transaction.status}')
+        else:
+            flash('Invalid M-PESA Code. Please check and try again.')
+            
+    return render_template('redeem.html')
+
 @app.route('/success')
 def success():
     access_code = request.args.get('code')
