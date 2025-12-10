@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h2>My Dashboard</h2>
+        <a href="{{ url_for('user_logout') }}" class="btn"
+            style="font-size: 0.8rem; padding: 5px 15px; border-color: var(--danger); color: var(--danger);">Logout</a>
+    </div>
+
+    <p style="text-align: center; margin-bottom: 30px; color: #aaa;">Welcome back, <span
+            style="color: white; font-weight: bold;">{{ phone }}</span></p>
+
+    <!-- Active Plan Card -->
+    {% if active_plan %}
+    <div class="package-card"
+        style="max-width: 600px; margin: 0 auto 50px auto; border-color: var(--success); box-shadow: 0 0 20px rgba(0, 255, 157, 0.2);">
+        <div style="text-align: center;">
+            <div style="color: var(--success); font-weight: bold; font-size: 1.2rem; margin-bottom: 10px;">â— ACTIVE
+                SESSION</div>
+            <h1 style="color: white; font-size: 3rem; margin: 10px 0;">{{ active_plan.package }}</h1>
+            <div style="font-size: 1.5rem; margin-bottom: 20px;">Code: <span
+                    style="color: var(--accent); font-family: monospace;">{{ active_plan.access_code }}</span></div>
+
+            <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <div style="color: #aaa; font-size: 0.9rem;">Time Remaining</div>
+                <div style="font-size: 1.8rem; color: white;">{{ active_plan.time_left }}</div>
+                <div style="color: #666; font-size: 0.8rem;">Expires: {{ active_plan.expiry }}</div>
+            </div>
+
+            <a href="{{ url_for('index') }}" class="btn" style="width: 100%;">Extend Plan</a>
+        </div>
+    </div>
+    {% else %}
+    <div class="package-card" style="max-width: 500px; margin: 0 auto 50px auto; border-color: #444; opacity: 0.8;">
+        <div style="text-align: center;">
+            <div style="color: #aaa; margin-bottom: 10px;">No Active Plan</div>
+            <p>You are currently not connected.</p>
+            <a href="{{ url_for('index') }}" class="btn" style="width: 100%; margin-top: 15px;">Buy Internet</a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- History -->
+    <h3 style="margin-bottom: 20px;">Recent Transactions</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Package</th>
+                    <th>Amount</th>
+                    <th>Code</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transactions %}
+                <tr>
+                    <td>{{ t.date_created.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ t.package_name }}</td>
+                    <td>{{ t.amount }}</td>
+                    <td style="font-family: monospace;">{{ t.access_code or '-' }}</td>
+                    <td class="status-{{ t.status.lower() }}">{{ t.status }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center;">No history found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

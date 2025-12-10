@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="payment-container" style="max-width: 400px; margin-top: 50px;">
+    <h2 style="text-align: center; color: var(--secondary); text-shadow: 0 0 10px var(--secondary);">My Account</h2>
+    <p style="text-align: center; margin-bottom: 20px;">Enter your phone number to check your plan status.</p>
+
+    <form method="POST">
+        <div class="form-group">
+            <label>Phone Number</label>
+            <input type="text" name="phone_number" class="form-control" required placeholder="e.g. 0712345678"
+                style="text-align: center; font-size: 1.2rem;">
+        </div>
+
+        <button type="submit" class="btn"
+            style="width: 100%; border-color: var(--secondary); color: var(--secondary);">Access Dashboard</button>
+    </form>
+
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="{{ url_for('index') }}" style="color: #aaa; text-decoration: none;">Back Home</a>
+    </div>
+</div>
+{% endblock %}

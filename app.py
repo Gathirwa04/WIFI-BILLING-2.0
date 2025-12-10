@@ -116,7 +116,241 @@ def payment(package_id):
         return redirect(url_for('index'))
     return render_template('payment.html', package=package)
 
-# ... (Previous Routes: stk_push, callback, check_payment, simulate_payment, redeem, success, admin_login) ...
+@app.route('/stk_push', methods=['POST'])
+def trigger_stk_push():
+    phone_number = request.form.get('phone_number')
+    package_id = int(request.form.get('package_id'))
+    package = get_package_by_id(package_id)
+
+    if not package:
+        return jsonify({'error': 'Invalid package'}), 400
+    
+    if not phone_number:
+         return jsonify({'error': 'Phone number required'}), 400
+
+    # Ensure phone number is in correct format (254...)
+    # Sanitize: remove spaces, +, etc.
+    clean_phone = phone_number.replace('+', '').replace(' ', '')
+    
+    try:
+        # Trigger STK Push
+        response = mpesa_client.stk_push(
+            phone_number=clean_phone,
+            amount=package['price'],
+            account_reference=f"Wifi_{package['name']}",
+            transaction_desc=f"Payment for {package['name']}"
+        )
+        
+        checkout_request_id = response.get('CheckoutRequestID')
+        response_code = response.get('ResponseCode')
+
+        if response_code == '0':
+            # Create Transaction Record
+            new_transaction = Transaction(
+                phone_number=clean_phone,
+                amount=package['price'],
+                package_name=package['name'],
+                checkout_request_id=checkout_request_id
+            )
+            db.session.add(new_transaction)
+            db.session.commit()
+            
+            return jsonify({'success': True, 'checkout_request_id': checkout_request_id})
+        else:
+            return jsonify({'success': False, 'message': response.get('ResponseDescription', 'STK Push failed')})
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/callback', methods=['POST'])
+def mpesa_callback():
+    data = request.get_json()
+    
+    # Process the callback data
+    # Note: In a real app, verify signature/authenticity
+    
+    body = data.get('Body', {}).get('stkCallback', {})
+    result_code = body.get('ResultCode')
+    checkout_request_id = body.get('CheckoutRequestID')
+    
+    transaction = Transaction.query.filter_by(checkout_request_id=checkout_request_id).first()
+    
+    if transaction:
+        if result_code == 0:
+            transaction.status = 'Completed'
+            # Extract receipt number (Item 1 usually)
+            items = body.get('CallbackMetadata', {}).get('Item', [])
+            for item in items:
+                if item.get('Name') == 'MpesaReceiptNumber':
+                    transaction.mpesa_receipt_number = item.get('Value')
+            
+            # Generate Access Code
+            transaction.access_code = secrets.token_hex(4).upper()
+        else:
+            transaction.status = 'Failed'
+        
+        db.session.commit()
+        
+    return jsonify({"ResultCode": 0, "ResultDesc": "Accepted"})
+
+@app.route('/check_payment/<checkout_request_id>')
+def check_payment(checkout_request_id):
+    transaction = Transaction.query.filter_by(checkout_request_id=checkout_request_id).first()
+    if transaction:
+        return jsonify({
+            'status': transaction.status,
+            'access_code': transaction.access_code if transaction.status == 'Completed' else None
+        })
+
+# --- Test / Simulation Route ---
+@app.route('/test/simulate_payment/<checkout_request_id>')
+def simulate_payment(checkout_request_id):
+    transaction = Transaction.query.filter_by(checkout_request_id=checkout_request_id).first()
+    if transaction:
+        transaction.status = 'Completed'
+        transaction.access_code = secrets.token_hex(4).upper()
+        transaction.mpesa_receipt_number = f"SIM{secrets.token_hex(4).upper()}"
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Payment simulated successfully'})
+    return jsonify({'success': False, 'message': 'Transaction not found'})
+
+
+@app.route('/redeem', methods=['GET', 'POST'])
+def redeem():
+    if request.method == 'POST':
+        mpesa_code = request.form.get('mpesa_code')
+        if not mpesa_code:
+            flash('Please enter a code or phone number')
+            return redirect(url_for('redeem'))
+            
+        # Check if it's a phone number (digits only or starts with +)
+        is_phone = mpesa_code.replace('+', '').isdigit()
+        
+        transaction = None
+        if is_phone:
+            # Search by phone number (latest successful)
+            clean_phone = mpesa_code.replace('+', '').replace(' ', '')
+             # Try 254 format or 07 format
+            if clean_phone.startswith('0'):
+                clean_phone = '254' + clean_phone[1:]
+            elif clean_phone.startswith('7') or clean_phone.startswith('1'):
+                clean_phone = '254' + clean_phone
+                
+            transaction = Transaction.query.filter_by(phone_number=clean_phone, status='Completed').order_by(Transaction.id.desc()).first()
+        else:
+            # Search by Receipt Number
+            transaction = Transaction.query.filter_by(mpesa_receipt_number=mpesa_code).first()
+        
+        if transaction:
+            if transaction.status == 'Completed':
+                return render_template('success.html', access_code=transaction.access_code)
+            else:
+                flash(f'Transaction found but status is: {transaction.status}')
+        else:
+            flash(f'No successful transaction found for {mpesa_code}.')
+            
+    return render_template('redeem.html')
+
+@app.route('/success')
+def success():
+    access_code = request.args.get('code')
+    return render_template('success.html', access_code=access_code)
+
+    return render_template('login.html')
+
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    # ... (existing code) ...
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+    
+    # ... (rest of admin dashboard logic) ...
+    # Re-pasting the FULL admin_dashboard logic here to ensure continuity if I replace the block
+    # Actually, I should use 'append' logic or insert before 'if __name__'.
+    # I'll stick to inserting new routes before the Admin Section or after it. 
+    # Let's insert BEFORE Admin Section to keep Admin at bottom.
+
+# --- User Portal Routes ---
+@app.route('/my_account', methods=['GET', 'POST'])
+def my_account():
+    if request.method == 'POST':
+        phone = request.form.get('phone_number')
+        if phone:
+            # Basic validation
+            clean_phone = phone.replace('+', '').replace(' ', '')
+             # Try 254 format or 07 format normalization for consistent session storage
+            if clean_phone.startswith('0'):
+                clean_phone = '254' + clean_phone[1:]
+            elif clean_phone.startswith('7') or clean_phone.startswith('1'):
+                clean_phone = '254' + clean_phone
+                
+            session['user_phone'] = clean_phone
+            return redirect(url_for('user_dashboard'))
+        else:
+            flash("Please enter your phone number.")
+    return render_template('user_login.html')
+
+@app.route('/user/dashboard')
+def user_dashboard():
+    user_phone = session.get('user_phone')
+    if not user_phone:
+        return redirect(url_for('my_account'))
+    
+    # Fetch History
+    transactions = Transaction.query.filter_by(phone_number=user_phone).order_by(Transaction.date_created.desc()).all()
+    
+    # Determine Active Plan
+    active_plan = None
+    now = datetime.utcnow()
+    pkg_duration_map = {p['name']: p['duration'] for p in PACKAGES}
+    
+    # Look for the latest COMPLETED transaction that is still valid
+    for t in transactions:
+        if t.status == 'Completed':
+            duration_str = pkg_duration_map.get(t.package_name, '1hr')
+            try:
+                duration = parse_duration(duration_str)
+                expiry_time = t.date_created + duration
+                if now < expiry_time:
+                    time_left = expiry_time - now
+                    # Format time left
+                    hours, remainder = divmod(time_left.seconds, 3600)
+                    minutes, _ = divmod(remainder, 60)
+                    
+                    if time_left.days > 0:
+                        time_str = f"{time_left.days} Days, {hours} Hrs"
+                    else:
+                        time_str = f"{hours} Hrs, {minutes} Mins"
+                        
+                    active_plan = {
+                        'package': t.package_name,
+                        'access_code': t.access_code,
+                        'time_left': time_str,
+                        'expiry': expiry_time.strftime('%Y-%m-%d %H:%M')
+                    }
+                    break # Found the most recent active one
+            except:
+                pass
+
+    return render_template('user_dashboard.html', transactions=transactions, active_plan=active_plan, phone=user_phone)
+
+@app.route('/user/logout')
+def user_logout():
+    session.pop('user_phone', None)
+    return redirect(url_for('index'))
+
+# --- Admin Section ---
+@app.route('/admin', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if username == 'admin' and password == 'admin123': # Simple hardcoded auth
+            session['admin_logged_in'] = True
+            return redirect(url_for('admin_dashboard'))
+        else:
+            flash('Invalid credentials')
+    return render_template('login.html')
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
