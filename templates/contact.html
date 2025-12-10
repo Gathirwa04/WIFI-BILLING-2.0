@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="payment-container" style="max-width: 600px;">
+    <h2 style="text-align: center; color: var(--danger); text-shadow: 0 0 10px var(--danger);">Report an Issue</h2>
+    <p style="text-align: center; margin-bottom: 20px;">We are sorry you are facing issues. Please let us know.</p>
+
+    <form method="POST">
+        <div class="form-group">
+            <label>Category</label>
+            <select name="category" class="form-control" style="background: rgba(255, 255, 255, 0.05); color: white;">
+                <option value="Slow Speed">Slow Internet Speed</option>
+                <option value="Payment Issue">Payment Not Reflected</option>
+                <option value="No Connection">Cannot Connect to WiFi</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Your Contact (Phone/Email)</label>
+            <input type="text" name="contact" class="form-control" required placeholder="So we can reach you">
+        </div>
+
+        <div class="form-group">
+            <label>Describe the Issue</label>
+            <textarea name="message" class="form-control" rows="5" required placeholder="What happened?"></textarea>
+        </div>
+
+        <button type="submit" class="btn" style="width: 100%; border-color: var(--danger); color: var(--danger);">Submit
+            Complaint</button>
+    </form>
+
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="{{ url_for('index') }}" style="color: #aaa; text-decoration: none;">Back Home</a>
+    </div>
+</div>
+{% endblock %}
