@@ -80,6 +80,20 @@ class Complaint(db.Model):
     status = db.Column(db.String(20), default='Open') # Open, Resolved
     date_submitted = db.Column(db.DateTime, default=datetime.utcnow)
 
+class Agent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(50), nullable=False)
+    wallet_balance = db.Column(db.Float, default=0.0)
+
+class Voucher(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(20), unique=True, nullable=False)
+    duration = db.Column(db.String(20), nullable=False)
+    is_used = db.Column(db.Boolean, default=False)
+    generated_by = db.Column(db.String(50), default='Admin')
+    date_generated = db.Column(db.DateTime, default=datetime.utcnow)
+
 # --- Routes ---
 
 def parse_duration(duration_str):
@@ -415,66 +429,140 @@ def admin_dashboard():
     if not session.get('admin_logged_in'):
         return redirect(url_for('admin_login'))
     
-    # --- Analytics ---
-    # 1. Total Revenue
-    completed_txns = Transaction.query.filter_by(status='Completed').all()
-    total_revenue = sum(t.amount for t in completed_txns)
-    
-    # 2. Active Connections (Simplified Logic)
-    active_count = 0
-    now = datetime.utcnow()
-    # In a real app, this would be optimized. Here we loop (fine for small scale).
-    # We need to look up duration from package name.
-    # Creating a map for faster lookup
-    pkg_duration_map = {p['name']: p['duration'] for p in PACKAGES}
-    
-    for t in completed_txns:
-        duration_str = pkg_duration_map.get(t.package_name, '1hr')
-        try:
-            # Fixing timedelta import issue by using datetime.timedelta directly if imported, 
-            # but here we need to ensure datetime is imported. 
-            # Note: At top of file 'from datetime import datetime' is used. 
-            # We need 'import datetime' to use timedelta easily or 'from datetime import datetime, timedelta'
-            # Let's fix imports in a separate edit or assume parsing works if I fix imports.
-            duration = parse_duration(duration_str)
-            if now < t.date_created + duration:
-                active_count += 1
-        except:
-            pass # Skip if parsing fails
+    # 1. Fetch Agents (Defensive)
+    try:
+        agents = Agent.query.all()
+    except:
+        agents = []
 
-    # 3. Most Popular Package
-    from collections import Counter
-    pkg_counts = Counter([t.package_name for t in completed_txns])
-    most_popular = pkg_counts.most_common(1)[0][0] if pkg_counts else "None"
-    
-    # --- Complaints ---
-    complaints = Complaint.query.order_by(Complaint.date_submitted.desc()).all()
+    # 2. Fetch Complaints
+    try:
+        complaints = Complaint.query.order_by(Complaint.date_submitted.desc()).all()
+    except:
+        complaints = []
 
-    # --- Transactions Filter & Search ---
+    # 3. Fetch ALL Transactions for analytics
+    try:
+        all_transactions = Transaction.query.order_by(Transaction.date_created.desc()).all()
+        
+        # Calculate Analytics
+        total_revenue = sum(t.amount for t in all_transactions if t.status == 'Completed')
+        
+        # Today's Stats
+        today = datetime.utcnow().date()
+        today_transactions = [t for t in all_transactions if t.date_created.date() == today]
+        today_revenue = sum(t.amount for t in today_transactions if t.status == 'Completed')
+        today_completed = len([t for t in today_transactions if t.status == 'Completed'])
+        pending_count = len([t for t in all_transactions if t.status == 'Pending'])
+        
+        # Active Count (Simple estimation)
+        active_count = 0
+        now = datetime.utcnow()
+        for t in all_transactions:
+            if t.status == 'Completed':
+                duration = timedelta(hours=1) 
+                pkg_name = t.package_name.upper() if t.package_name else ''
+                if '30MIN' in pkg_name or 'BASIC' in pkg_name: duration = timedelta(minutes=30)
+                elif '3HR' in pkg_name or 'BAZU' in pkg_name: duration = timedelta(hours=3)
+                elif '6HR' in pkg_name or 'KIFARU' in pkg_name: duration = timedelta(hours=6)
+                elif '12HR' in pkg_name or 'NDOVU' in pkg_name: duration = timedelta(hours=12)
+                elif '24HR' in pkg_name or 'JINICE' in pkg_name: duration = timedelta(hours=24)
+                elif '3 DAY' in pkg_name or 'BREEZY' in pkg_name: duration = timedelta(days=3)
+                elif '1 WEEK' in pkg_name or 'WIKI' in pkg_name: duration = timedelta(weeks=1)
+                elif '2 WEEK' in pkg_name or 'BALOZI' in pkg_name: duration = timedelta(weeks=2)
+                elif '1 MONTH' in pkg_name or 'MWEZI' in pkg_name: duration = timedelta(days=30)
+                
+                if now < t.date_created + duration:
+                    active_count += 1
+                    
+        # Popular Package
+        from collections import Counter
+        completed_pkgs = [t.package_name for t in all_transactions if t.status == 'Completed']
+        if completed_pkgs:
+            pkg_counts = Counter(completed_pkgs)
+            most_popular = pkg_counts.most_common(1)[0][0]
+        else:
+            most_popular = "None"
+            
+    except Exception as e:
+        print(f"Dashboard Error: {e}")
+        all_transactions = []
+        total_revenue = 0
+        active_count = 0
+        most_popular = "Error"
+        today_revenue = 0
+        today_completed = 0
+        pending_count = 0
+
+    # 4. Filter transactions for display
+    transactions = all_transactions
     search_query = request.args.get('q')
     filter_status = request.args.get('status')
     
-    query = Transaction.query
-    
     if search_query:
-        # Search by Phone or Receipt or Code
-        query = query.filter(
-            (Transaction.phone_number.contains(search_query)) | 
-            (Transaction.mpesa_receipt_number.contains(search_query)) |
-            (Transaction.access_code.contains(search_query))
-        )
+        sq = search_query.lower()
+        transactions = [t for t in transactions if 
+                        sq in str(t.phone_number or '').lower() or 
+                        sq in str(t.access_code or '').lower() or
+                        sq in str(t.mpesa_receipt_number or '').lower()]
     
     if filter_status:
-        query = query.filter_by(status=filter_status)
-        
-    transactions = query.order_by(Transaction.date_created.desc()).all()
-        
+        transactions = [t for t in transactions if t.status == filter_status]
+
+    # Get last 5 payments
+    last_payments = Transaction.query.filter_by(status='Completed').order_by(Transaction.date_created.desc()).limit(5).all()
+    
+    # Total users count (unique phone numbers)
+    total_users = db.session.query(Transaction.phone_number).distinct().count()
+    
+    # Expired users count
+    expired_count = Transaction.query.filter_by(status='Expired').count()
+
     return render_template('dashboard.html', 
                            transactions=transactions, 
                            total_revenue=total_revenue,
                            active_count=active_count,
                            most_popular=most_popular,
-                           complaints=complaints)
+                           complaints=complaints,
+                           agents=agents,
+                           today_revenue=today_revenue,
+                           today_completed=today_completed,
+                           pending_count=pending_count,
+                           last_payments=last_payments,
+                           total_users=total_users,
+                           expired_count=expired_count)
+
+# --- Admin Section: Users ---
+@app.route('/admin/users')
+def admin_users():
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+    transactions = Transaction.query.order_by(Transaction.date_created.desc()).all()
+    return render_template('admin/users.html', transactions=transactions)
+
+# --- Admin Section: Payments ---
+@app.route('/admin/payments')
+def admin_payments():
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+    transactions = Transaction.query.order_by(Transaction.date_created.desc()).all()
+    return render_template('admin/payments.html', transactions=transactions, packages=PACKAGES)
+
+# --- Admin Section: Settings ---
+@app.route('/admin/settings', methods=['GET', 'POST'])
+def admin_settings():
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+    if request.method == 'POST':
+        flash('Settings saved (placeholder)')
+    return render_template('admin/settings.html')
+
+# --- Admin Section: Admin Accounts ---
+@app.route('/admin/admins')
+def admin_admins():
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+    return render_template('admin/admins.html')
 
 
 
@@ -505,11 +593,141 @@ def export_csv():
     return Response(output, mimetype="text/csv", headers={"Content-Disposition": "attachment;filename=transactions.csv"})
 
 # --- PDF Voucher Generation ---
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from io import BytesIO
 
+@app.route('/admin/generate_vouchers', methods=['POST'])
+def generate_vouchers():
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+        
+    quantity = int(request.form.get('quantity', 10))
+    duration = request.form.get('duration', '1hr')
+    package_name = request.form.get('package_name', 'Lite')
+    
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    
+    x_start, y_start = 50, height - 50
+    card_width, card_height = 150, 80
+    cols = 3
+    x, y = x_start, y_start
+    
+    for i in range(quantity):
+        code = secrets.token_hex(4).upper()
+        
+        # Save to DB
+        v = Voucher(code=code, duration=duration, generated_by='Admin')
+        db.session.add(v)
+        
+        # Draw Card
+        p.setStrokeColor(colors.cyan)
+        p.rect(x, y - card_height, card_width, card_height)
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(x + 10, y - 20, "WIFI VOUCHER")
+        p.setFont("Helvetica", 10)
+        p.drawString(x + 10, y - 35, f"Plan: {package_name} ({duration})")
+        p.setFont("Courier-Bold", 14)
+        p.drawString(x + 10, y - 60, f"Code: {code}")
+        
+        x += card_width + 10
+        if (i + 1) % cols == 0:
+            x = x_start
+            y -= card_height + 10
+        if y < 50:
+            p.showPage()
+            y = y_start
+            x = x_start
+            
+    db.session.commit()
+    p.save()
+    buffer.seek(0)
+    return Response(buffer, mimetype='application/pdf', 
+                    headers={"Content-Disposition": f"attachment;filename=vouchers_{package_name}_{quantity}.pdf"})
 
+# --- Agent Management Routes ---
+@app.route('/admin/create_agent', methods=['POST'])
+def create_agent():
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+    username = request.form.get('username')
+    password = request.form.get('password')
+    if Agent.query.filter_by(username=username).first():
+        flash('Agent username already exists.')
+    else:
+        new_agent = Agent(username=username, password=password, wallet_balance=0)
+        db.session.add(new_agent)
+        db.session.commit()
+        flash(f'Agent {username} created.')
+    return redirect(url_for('admin_dashboard'))
 
+@app.route('/admin/topup_agent/<int:id>', methods=['POST'])
+def topup_agent(id):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+    amount = float(request.form.get('amount', 0))
+    agent = Agent.query.get(id)
+    if agent:
+        agent.wallet_balance += amount
+        db.session.commit()
+        flash(f'Added {amount} to {agent.username}.')
+    return redirect(url_for('admin_dashboard'))
 
-# Create DB
+# --- Agent Portal Routes ---
+@app.route('/agent', methods=['GET', 'POST'])
+def agent_login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        agent = Agent.query.filter_by(username=username).first()
+        if agent and agent.password == password:
+            session['agent_id'] = agent.id
+            return redirect(url_for('agent_dashboard'))
+        else:
+            flash('Invalid Agent Credentials')
+    return render_template('agent_login.html')
+
+@app.route('/agent/dashboard')
+def agent_dashboard():
+    agent_id = session.get('agent_id')
+    if not agent_id:
+        return redirect(url_for('agent_login'))
+    agent = Agent.query.get(agent_id)
+    return render_template('agent_dashboard.html', agent=agent, packages=PACKAGES)
+
+@app.route('/agent/sell', methods=['POST'])
+def agent_sell():
+    agent_id = session.get('agent_id')
+    if not agent_id:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    package_id = int(request.form.get('package_id'))
+    phone_number = request.form.get('phone_number')
+    package = get_package_by_id(package_id)
+    agent = Agent.query.get(agent_id)
+    if agent.wallet_balance < package['price']:
+        return jsonify({'success': False, 'message': 'Insufficient Balance'}), 400
+    agent.wallet_balance -= package['price']
+    new_code = secrets.token_hex(4).upper()
+    new_txn = Transaction(
+        phone_number=phone_number.replace('+', '').replace(' ', ''),
+        amount=package['price'],
+        package_name=package['name'],
+        checkout_request_id=f"AGENT_{secrets.token_hex(4)}",
+        mpesa_receipt_number=f"AGENT_{agent.username.upper()}_{secrets.token_hex(4)}",
+        status='Completed',
+        access_code=new_code
+    )
+    db.session.add(new_txn)
+    db.session.commit()
+    return jsonify({'success': True, 'code': new_code, 'new_balance': agent.wallet_balance})
+
+@app.route('/agent/logout')
+def agent_logout():
+    session.pop('agent_id', None)
+    return redirect(url_for('index'))# Create DB
 with app.app_context():
     db.create_all()
 

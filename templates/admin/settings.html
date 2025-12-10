@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display: flex; min-height: 80vh;">
+
+    <!-- Sidebar -->
+    <nav style="width: 220px; background: #0a0a15; padding: 20px; border-right: 1px solid #222;">
+        <h3 style="color: var(--primary); margin: 0 0 30px 0; font-size: 1rem;">⚡ ADMIN PANEL</h3>
+        <a href="{{ url_for('admin_dashboard') }}" class="nav-link"
+            style="display: block; padding: 12px 15px; color: #888; text-decoration: none; border-radius: 8px; margin-bottom: 5px;">📊
+            Dashboard</a>
+        <a href="{{ url_for('admin_users') }}" class="nav-link"
+            style="display: block; padding: 12px 15px; color: #888; text-decoration: none; border-radius: 8px; margin-bottom: 5px;">👥
+            Users</a>
+        <a href="{{ url_for('admin_payments') }}" class="nav-link"
+            style="display: block; padding: 12px 15px; color: #888; text-decoration: none; border-radius: 8px; margin-bottom: 5px;">💳
+            Payments</a>
+        <a href="{{ url_for('admin_settings') }}" class="nav-link active"
+            style="display: block; padding: 12px 15px; color: white; text-decoration: none; border-radius: 8px; margin-bottom: 5px; background: rgba(0,243,255,0.1); border-left: 3px solid var(--primary);">⚙️
+            Settings</a>
+        <a href="{{ url_for('admin_admins') }}" class="nav-link"
+            style="display: block; padding: 12px 15px; color: #888; text-decoration: none; border-radius: 8px; margin-bottom: 5px;">🔐
+            Admin Accounts</a>
+        <hr style="border: none; border-top: 1px solid #333; margin: 30px 0;">
+        <a href="{{ url_for('index') }}"
+            style="display: block; padding: 12px 15px; color: #666; text-decoration: none; font-size: 0.9rem;">← Back to
+            Site</a>
+    </nav>
+
+    <!-- Main Content -->
+    <main style="flex: 1; padding: 30px;">
+        <h2 style="margin: 0 0 30px 0; color: white;">⚙️ Settings</h2>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px;">
+            <!-- System Settings -->
+            <div style="background: #111; padding: 25px; border-radius: 12px; border: 1px solid #222;">
+                <h3 style="margin: 0 0 20px 0; color: white;">System</h3>
+                <form>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; color: #888; margin-bottom: 5px;">System Name</label>
+                        <input type="text" class="form-control" value="TURBO FAST WIFI" placeholder="Your WiFi Name">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; color: #888; margin-bottom: 5px;">Support Phone</label>
+                        <input type="text" class="form-control" value="0114002061" placeholder="Support Number">
+                    </div>
+                    <button type="button" class="btn" onclick="alert('Save - Coming Soon')">Save Changes</button>
+                </form>
+            </div>
+
+            <!-- Router Settings -->
+            <div style="background: #111; padding: 25px; border-radius: 12px; border: 1px solid #222;">
+                <h3 style="margin: 0 0 20px 0; color: white;">Router (Mikrotik)</h3>
+                <form>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; color: #888; margin-bottom: 5px;">Router IP Address</label>
+                        <input type="text" class="form-control" placeholder="192.168.88.1">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; color: #888; margin-bottom: 5px;">API Username</label>
+                        <input type="text" class="form-control" placeholder="admin">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; color: #888; margin-bottom: 5px;">API Password</label>
+                        <input type="password" class="form-control" placeholder="••••••••">
+                    </div>
+                    <button type="button" class="btn" onclick="alert('Connect Router - Coming Soon')">Test
+                        Connection</button>
+                </form>
+            </div>
+
+            <!-- M-Pesa Settings -->
+            <div style="background: #111; padding: 25px; border-radius: 12px; border: 1px solid #222;">
+                <h3 style="margin: 0 0 20px 0; color: white;">M-Pesa</h3>
+                <form>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; color: #888; margin-bottom: 5px;">Consumer Key</label>
+                        <input type="text" class="form-control" placeholder="Your Consumer Key">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; color: #888; margin-bottom: 5px;">Consumer Secret</label>
+                        <input type="password" class="form-control" placeholder="Your Consumer Secret">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; color: #888; margin-bottom: 5px;">Shortcode</label>
+                        <input type="text" class="form-control" placeholder="174379">
+                    </div>
+                    <button type="button" class="btn" onclick="alert('Save M-Pesa - Coming Soon')">Save M-Pesa
+                        Config</button>
+                </form>
+            </div>
+
+            <!-- Admin Password -->
+            <div style="background: #111; padding: 25px; border-radius: 12px; border: 1px solid #222;">
+                <h3 style="margin: 0 0 20px 0; color: white;">Change Password</h3>
+                <form>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; color: #888; margin-bottom: 5px;">Current Password</label>
+                        <input type="password" class="form-control" placeholder="••••••••">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; color: #888; margin-bottom: 5px;">New Password</label>
+                        <input type="password" class="form-control" placeholder="••••••••">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; color: #888; margin-bottom: 5px;">Confirm Password</label>
+                        <input type="password" class="form-control" placeholder="••••••••">
+                    </div>
+                    <button type="button" class="btn" style="border-color: var(--danger); color: var(--danger);"
+                        onclick="alert('Change Password - Coming Soon')">Update Password</button>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

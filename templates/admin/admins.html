@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display: flex; min-height: 80vh;">
+
+    <!-- Sidebar -->
+    <nav style="width: 220px; background: #0a0a15; padding: 20px; border-right: 1px solid #222;">
+        <h3 style="color: var(--primary); margin: 0 0 30px 0; font-size: 1rem;">⚡ ADMIN PANEL</h3>
+        <a href="{{ url_for('admin_dashboard') }}" class="nav-link"
+            style="display: block; padding: 12px 15px; color: #888; text-decoration: none; border-radius: 8px; margin-bottom: 5px;">📊
+            Dashboard</a>
+        <a href="{{ url_for('admin_users') }}" class="nav-link"
+            style="display: block; padding: 12px 15px; color: #888; text-decoration: none; border-radius: 8px; margin-bottom: 5px;">👥
+            Users</a>
+        <a href="{{ url_for('admin_payments') }}" class="nav-link"
+            style="display: block; padding: 12px 15px; color: #888; text-decoration: none; border-radius: 8px; margin-bottom: 5px;">💳
+            Payments</a>
+        <a href="{{ url_for('admin_settings') }}" class="nav-link"
+            style="display: block; padding: 12px 15px; color: #888; text-decoration: none; border-radius: 8px; margin-bottom: 5px;">⚙️
+            Settings</a>
+        <a href="{{ url_for('admin_admins') }}" class="nav-link active"
+            style="display: block; padding: 12px 15px; color: white; text-decoration: none; border-radius: 8px; margin-bottom: 5px; background: rgba(0,243,255,0.1); border-left: 3px solid var(--primary);">🔐
+            Admin Accounts</a>
+        <hr style="border: none; border-top: 1px solid #333; margin: 30px 0;">
+        <a href="{{ url_for('index') }}"
+            style="display: block; padding: 12px 15px; color: #666; text-decoration: none; font-size: 0.9rem;">← Back to
+            Site</a>
+    </nav>
+
+    <!-- Main Content -->
+    <main style="flex: 1; padding: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h2 style="margin: 0; color: white;">🔐 Admin Accounts</h2>
+            <button class="btn" style="border-color: var(--success); color: var(--success);"
+                onclick="alert('Add Admin - Coming Soon')">+ Add Admin</button>
+        </div>
+
+        <!-- Add Admin Form -->
+        <div style="background: #111; padding: 25px; border-radius: 12px; border: 1px solid #222; margin-bottom: 30px;">
+            <h3 style="margin: 0 0 20px 0; color: white;">Create New Admin</h3>
+            <form style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+                <div>
+                    <label style="display: block; color: #888; margin-bottom: 5px;">Username</label>
+                    <input type="text" class="form-control" placeholder="admin2" style="width: 180px;">
+                </div>
+                <div>
+                    <label style="display: block; color: #888; margin-bottom: 5px;">Password</label>
+                    <input type="password" class="form-control" placeholder="••••••••" style="width: 180px;">
+                </div>
+                <div>
+                    <label style="display: block; color: #888; margin-bottom: 5px;">Role</label>
+                    <select class="form-control" style="width: 180px;">
+                        <option value="full">Full Admin</option>
+                        <option value="support">Support (View Only)</option>
+                    </select>
+                </div>
+                <button type="button" class="btn" onclick="alert('Create Admin - Coming Soon')">Create Admin</button>
+            </form>
+        </div>
+
+        <!-- Admins List -->
+        <div style="background: #111; padding: 25px; border-radius: 12px; border: 1px solid #222;">
+            <h3 style="margin: 0 0 20px 0; color: white;">Current Admins</h3>
+            <table style="width: 100%;">
+                <thead>
+                    <tr style="color: #888; border-bottom: 1px solid #333;">
+                        <th style="padding: 12px; text-align: left;">Username</th>
+                        <th style="padding: 12px; text-align: left;">Role</th>
+                        <th style="padding: 12px; text-align: left;">Created</th>
+                        <th style="padding: 12px; text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid #222;">
+                        <td style="padding: 15px;">admin</td>
+                        <td style="padding: 15px;"><span
+                                style="background: rgba(0,243,255,0.2); color: var(--primary); padding: 3px 10px; border-radius: 10px; font-size: 0.8rem;">Full
+                                Admin</span></td>
+                        <td style="padding: 15px; color: #888;">Default</td>
+                        <td style="padding: 15px; text-align: center; color: #666;">-</td>
+                    </tr>
+                    <!-- Placeholder for future admins -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+{% endblock %}

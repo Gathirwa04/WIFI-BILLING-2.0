@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display: flex; min-height: 80vh;">
+
+    <!-- Sidebar Navigation -->
+    <nav style="width: 220px; background: #0a0a15; padding: 20px; border-right: 1px solid #222;">
+        <h3 style="color: var(--primary); margin: 0 0 30px 0; font-size: 1rem;">⚡ ADMIN PANEL</h3>
+
+        <a href="{{ url_for('admin_dashboard') }}" class="nav-link"
+            style="display: block; padding: 12px 15px; color: #888; text-decoration: none; border-radius: 8px; margin-bottom: 5px;">📊
+            Dashboard</a>
+        <a href="{{ url_for('admin_users') }}" class="nav-link active"
+            style="display: block; padding: 12px 15px; color: white; text-decoration: none; border-radius: 8px; margin-bottom: 5px; background: rgba(0,243,255,0.1); border-left: 3px solid var(--primary);">👥
+            Users</a>
+        <a href="{{ url_for('admin_payments') }}" class="nav-link"
+            style="display: block; padding: 12px 15px; color: #888; text-decoration: none; border-radius: 8px; margin-bottom: 5px;">💳
+            Payments</a>
+        <a href="{{ url_for('admin_settings') }}" class="nav-link"
+            style="display: block; padding: 12px 15px; color: #888; text-decoration: none; border-radius: 8px; margin-bottom: 5px;">⚙️
+            Settings</a>
+        <a href="{{ url_for('admin_admins') }}" class="nav-link"
+            style="display: block; padding: 12px 15px; color: #888; text-decoration: none; border-radius: 8px; margin-bottom: 5px;">🔐
+            Admin Accounts</a>
+        <hr style="border: none; border-top: 1px solid #333; margin: 30px 0;">
+        <a href="{{ url_for('index') }}"
+            style="display: block; padding: 12px 15px; color: #666; text-decoration: none; font-size: 0.9rem;">← Back to
+            Site</a>
+    </nav>
+
+    <!-- Main Content -->
+    <main style="flex: 1; padding: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h2 style="margin: 0; color: white;">👥 User Management</h2>
+            <button class="btn" style="border-color: var(--success); color: var(--success);"
+                onclick="alert('Add User - Coming Soon')">+ Add User</button>
+        </div>
+
+        <!-- Users Table -->
+        <div style="background: #111; padding: 25px; border-radius: 12px; border: 1px solid #222;">
+            <table style="width: 100%;">
+                <thead>
+                    <tr style="color: #888; border-bottom: 1px solid #333;">
+                        <th style="padding: 15px; text-align: left;">Phone</th>
+                        <th style="padding: 15px; text-align: left;">Package</th>
+                        <th style="padding: 15px; text-align: left;">Status</th>
+                        <th style="padding: 15px; text-align: left;">Code</th>
+                        <th style="padding: 15px; text-align: left;">Date</th>
+                        <th style="padding: 15px; text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr style="border-bottom: 1px solid #222;">
+                        <td style="padding: 15px; font-family: monospace;">{{ t.phone_number }}</td>
+                        <td style="padding: 15px;">{{ t.package_name }}</td>
+                        <td style="padding: 15px;">
+                            {% if t.status == 'Completed' %}
+                            <span style="color: var(--success);">✓ Active</span>
+                            {% elif t.status == 'Expired' %}
+                            <span style="color: var(--danger);">✗ Expired</span>
+                            {% else %}
+                            <span style="color: orange;">⏳ {{ t.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 15px; font-family: monospace; color: var(--accent);">{{ t.access_code or '-'
+                            }}</td>
+                        <td style="padding: 15px; color: #888;">{{ t.date_created.strftime('%d %b %Y') }}</td>
+                        <td style="padding: 15px; text-align: center;">
+                            <button class="btn" style="padding: 4px 10px; font-size: 0.75rem;"
+                                onclick="alert('Edit User - Coming Soon')">Edit</button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="padding: 30px; text-align: center; color: #666;">No users found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+{% endblock %}
