@@ -166,7 +166,19 @@ def check_payment(checkout_request_id):
             'status': transaction.status,
             'access_code': transaction.access_code if transaction.status == 'Completed' else None
         })
-    return jsonify({'status': 'NotFound'})
+
+# --- Test / Simulation Route ---
+@app.route('/test/simulate_payment/<checkout_request_id>')
+def simulate_payment(checkout_request_id):
+    transaction = Transaction.query.filter_by(checkout_request_id=checkout_request_id).first()
+    if transaction:
+        transaction.status = 'Completed'
+        transaction.access_code = secrets.token_hex(4).upper()
+        transaction.mpesa_receipt_number = f"SIM{secrets.token_hex(4).upper()}"
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Payment simulated successfully'})
+    return jsonify({'success': False, 'message': 'Transaction not found'})
+
 
 @app.route('/redeem', methods=['GET', 'POST'])
 def redeem():

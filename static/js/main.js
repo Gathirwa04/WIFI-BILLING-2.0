@@ -24,7 +24,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        statusDiv.innerHTML = 'Check your phone to enter PIN...';
+                        statusDiv.innerHTML = 'Check your phone to enter PIN...<br><br><small>Test Mode: Waiting for callback...</small>';
+
+                        // Inject Simulation Button
+                        const simBtn = document.createElement('button');
+                        simBtn.innerText = "Simulate Success (Localhost Only)";
+                        simBtn.type = "button";
+                        simBtn.className = "btn btn-secondary";
+                        simBtn.style.marginTop = "10px";
+                        simBtn.style.fontSize = "0.8rem";
+                        simBtn.onclick = function () {
+                            fetch(`/test/simulate_payment/${data.checkout_request_id}`)
+                                .then(r => r.json())
+                                .then(d => {
+                                    statusDiv.innerHTML = d.message;
+                                });
+                        };
+                        statusDiv.appendChild(simBtn);
+
                         // Start polling
                         pollPaymentStatus(data.checkout_request_id);
                     } else {
