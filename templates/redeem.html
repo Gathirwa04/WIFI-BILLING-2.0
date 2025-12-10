@@ -3,13 +3,14 @@
 {% block content %}
 <div class="payment-container" style="max-width: 500px;">
     <h2 style="text-align: center; color: var(--accent);">Redeem Purchase</h2>
-    <p style="text-align: center; margin-bottom: 20px;">Lost your code? Enter your M-PESA Receipt Number below.</p>
+    <p style="text-align: center; margin-bottom: 20px;">Lost your code? Enter your M-PESA Receipt Number **OR** Phone
+        Number.</p>
 
     <form method="POST">
         <div class="form-group">
-            <label style="display: block; margin-bottom: 10px;">M-PESA Receipt Number</label>
-            <input type="text" name="mpesa_code" class="form-control" placeholder="e.g. QKH1234567" required
-                style="text-transform: uppercase;">
+            <label style="display: block; margin-bottom: 10px;">M-PESA Receipt / Phone Number</label>
+            <input type="text" name="mpesa_code" class="form-control" placeholder="e.g. QKH1234567 OR 0712345678"
+                required style="text-transform: uppercase;">
         </div>
         <button type="submit" class="btn" style="width: 100%; border-color: var(--accent); color: var(--accent);">Find
             Code</button>

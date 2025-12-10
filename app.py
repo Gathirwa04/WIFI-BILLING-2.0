@@ -185,10 +185,24 @@ def redeem():
     if request.method == 'POST':
         mpesa_code = request.form.get('mpesa_code')
         if not mpesa_code:
-            flash('Please enter a code')
+            flash('Please enter a code or phone number')
             return redirect(url_for('redeem'))
             
-        transaction = Transaction.query.filter_by(mpesa_receipt_number=mpesa_code).first()
+        # Check if it's a phone number (digits only or starts with +)
+        is_phone = mpesa_code.replace('+', '').isdigit()
+        
+        transaction = None
+        if is_phone:
+            # Search by phone number (latest successful)
+            clean_phone = mpesa_code.replace('+', '').replace(' ', '')
+             # Try 254 format or 07 format
+            if clean_phone.startswith('0'):
+                clean_phone = '254' + clean_phone[1:]
+                
+            transaction = Transaction.query.filter_by(phone_number=clean_phone, status='Completed').order_by(Transaction.id.desc()).first()
+        else:
+            # Search by Receipt Number
+            transaction = Transaction.query.filter_by(mpesa_receipt_number=mpesa_code).first()
         
         if transaction:
             if transaction.status == 'Completed':
@@ -196,7 +210,7 @@ def redeem():
             else:
                 flash(f'Transaction found but status is: {transaction.status}')
         else:
-            flash('Invalid M-PESA Code. Please check and try again.')
+            flash(f'No successful transaction found for {mpesa_code}.')
             
     return render_template('redeem.html')
 
